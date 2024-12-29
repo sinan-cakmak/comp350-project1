@@ -1,0 +1,53 @@
+services:
+  reverse-proxy:
+    build: ./reverse-proxy
+    ports:
+      - "80:80"
+      - "81:81"
+    depends_on:
+      - app-b
+      - app-c
+    volumes:
+      - ./reverse-proxy/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - webnet
+
+  database:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: mydb
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - webnet
+  app-b:
+    build: ./app-b
+    environment:
+      - DB_HOST=database
+      - DB_USER=user
+      - DB_PASSWORD=password
+      - DB_NAME=mydb
+    networks:
+      - webnet
+    depends_on:
+      - database
+
+  app-c:
+    build: ./app-c
+    environment:
+      - DB_HOST=database
+      - DB_USER=user
+      - DB_PASSWORD=password
+      - DB_NAME=mydb
+    networks:
+      - webnet
+    depends_on:
+      - database
+
+networks:
+  webnet:
+volumes:
+  db-data:
